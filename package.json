@@ -1,0 +1,71 @@
+{
+  "name": "@hebx/hak-ats-plugin",
+  "version": "0.1.0",
+  "description": "Hedera Agent Kit v4 plugin for Asset Tokenization Studio — equity issuance, KYC, dividends",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "clean": "rm -rf dist coverage",
+    "secrets:scan": "gitleaks detect --no-banner --source .",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "hedera",
+    "agent-kit",
+    "plugin",
+    "asset-tokenization",
+    "ERC-1400",
+    "ERC-3643",
+    "security-tokens",
+    "RWA"
+  ],
+  "author": "Hebx",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hebx/hak-ats-plugin"
+  },
+  "peerDependencies": {
+    "@hashgraph/hedera-agent-kit": "^4.0.0",
+    "@hiero-ledger/sdk": "^2.81.0"
+  },
+  "dependencies": {
+    "@hashgraph/asset-tokenization-sdk": "^7.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@hashgraph/hedera-agent-kit": "^4.0.0",
+    "@hashgraph/hedera-agent-kit-langchain": "^1.0.0",
+    "@hiero-ledger/sdk": "^2.81.0",
+    "@langchain/openai": "^0.5.0",
+    "@types/node": "^20.0.0",
+    "dotenv": "^16.4.0",
+    "eslint": "^9.0.0",
+    "ethers": "^6.16.0",
+    "prettier": "^3.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
