@@ -33,6 +33,7 @@ export const ROLES = {
   CONTROL_LIST: '0xca537e1c88c9f52dc5692c96c482841c3bea25aafc5f3bfe96f645b5f800cac3',
   KYC: '0x6fbd421e041603fa367357d79ffc3b2f9fd37a6fc4eec661aa5537a9ae75f93d',
   CONTROLLER: '0xa72964c08512ad29f46841ce735cff038789243c2b506a89163cc99f76d06c0f',
+  PAUSER: '0x6f65556918c1422809d0d567462eafeb371be30159d74b38ac958dc58864faeb',
 } as const;
 
 const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -50,6 +51,13 @@ export interface TransferResult {
   from: string;
   to: string;
   amount: string;
+  txHash: string;
+  blockNumber: number;
+}
+
+export interface PauseResult {
+  diamondAddress: string;
+  paused: boolean;
   txHash: string;
   blockNumber: number;
 }
@@ -129,6 +137,27 @@ export class SecurityClient {
   async balanceOf(holder: string): Promise<bigint> {
     const read = IERC1410Read__factory.connect(this.diamondAddress, this.reader);
     return read.balanceOf(holder);
+  }
+
+  /**
+   * Pause or unpause all transfers on the security (ERC-1400 PAUSER path).
+   * Ensures the operator holds PAUSER_ROLE first. Idempotent against current state:
+   * a no-op (already in the requested state) returns without sending a transaction.
+   */
+  async setPaused(paused: boolean): Promise<PauseResult> {
+    await this.ensureRole(ROLES.PAUSER, this.signer.evmAddress);
+    const pause = IPause__factory.connect(this.diamondAddress, this.runner);
+    const tx = paused
+      ? await pause.pause({ gasLimit: GAS.PAUSE })
+      : await pause.unpause({ gasLimit: GAS.PAUSE });
+    const receipt = await tx.wait();
+    if (!receipt) throw new Error(`${paused ? 'pause' : 'unpause'} tx ${tx.hash} produced no receipt`);
+    return {
+      diamondAddress: this.diamondAddress,
+      paused,
+      txHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+    };
   }
 
   /**

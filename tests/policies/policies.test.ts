@@ -4,10 +4,9 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Client } from '@hiero-ledger/sdk';
-import { MainnetDenyPolicy } from '../../src/policies/mainnet-deny.js';
 import { MaxSupplyCapPolicy } from '../../src/policies/max-supply-cap.js';
 import { JurisdictionAllowlistPolicy } from '../../src/policies/jurisdiction-allowlist.js';
-import { resetEnvCache } from '../../src/env.js';
+import { loadEnv, resetEnvCache } from '../../src/env.js';
 
 const fakeClient = {} as Client;
 const ctx = {};
@@ -45,29 +44,23 @@ afterEach(() => {
   resetEnvCache();
 });
 
-describe('MainnetDenyPolicy', () => {
-  it('allows tool calls on testnet', async () => {
-    const p = new MainnetDenyPolicy();
-    await expect(p.preToolExecutionHook(preParams({}), 'ats_deploy_security')).resolves.toBeUndefined();
+describe('network selection (opt-in, no deny)', () => {
+  it('defaults to testnet when HEDERA_NETWORK is unset', async () => {
+    delete process.env.HEDERA_NETWORK;
+    resetEnvCache();
+    expect(loadEnv().HEDERA_NETWORK).toBe('testnet');
   });
 
-  it('blocks tool calls when network is not testnet', async () => {
+  it('accepts mainnet when explicitly set (opt-in at your own risk)', async () => {
     process.env.HEDERA_NETWORK = 'mainnet';
     resetEnvCache();
-    const p = new MainnetDenyPolicy();
-    // Doubly guarded: the env schema (z.literal('testnet')) rejects mainnet before the
-    // policy's own check, so the call is blocked either way. Assert it does not pass.
-    await expect(
-      p.preToolExecutionHook(preParams({}), 'ats_deploy_security'),
-    ).rejects.toThrow();
+    expect(loadEnv().HEDERA_NETWORK).toBe('mainnet');
   });
 
-  it('ignores tools outside its relevant set', async () => {
-    process.env.HEDERA_NETWORK = 'mainnet';
+  it('rejects an unknown network', async () => {
+    process.env.HEDERA_NETWORK = 'devnet';
     resetEnvCache();
-    const p = new MainnetDenyPolicy();
-    // Not an ATS tool → policy must not fire even though network is wrong.
-    await expect(p.preToolExecutionHook(preParams({}), 'some_other_tool')).resolves.toBeUndefined();
+    expect(() => loadEnv()).toThrow();
   });
 });
 

@@ -3,6 +3,7 @@ import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { FactoryClient, type EquityRights, type SecurityCommonInfo } from '../../contracts/factory-client.js';
 import { getLocalSigner } from '../../adapters/local-key-signer.js';
+import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_DEPLOY_SECURITY_TOOL = 'ats_deploy_security';
@@ -11,7 +12,7 @@ export const ATS_DEPLOY_SECURITY_TOOL = 'ats_deploy_security';
 const deploySecurityParameters = z.object({
   type: z
     .enum(['EQUITY'])
-    .describe('Security type. Only EQUITY is supported in this release; BOND is on the roadmap.'),
+    .describe('Security type. This tool deploys EQUITY; use ats_deploy_bond for bonds.'),
   name: z.string().min(1).max(64).describe('On-chain display name of the security.'),
   symbol: z
     .string()
@@ -57,7 +58,7 @@ interface DeploySecurityResult {
   diamondAddress: string;
   txHash: string;
   blockNumber: number;
-  network: 'testnet';
+  network: HederaNetwork;
 }
 
 const DIVIDEND_RIGHT_CODE = { NONE: 0, PREFERRED: 1 } as const;
@@ -81,7 +82,7 @@ export const atsDeploySecurityTool = (_context: Context): Tool => ({
   method: ATS_DEPLOY_SECURITY_TOOL,
   name: 'Deploy Security',
   description:
-    'Deploys a new tokenized security (Equity) on the Hedera-deployed Asset Tokenization Studio factory. Returns the diamond address, transaction hash, and block number. Operates on Hedera testnet only.',
+    'Deploys a new tokenized EQUITY security (diamond) on the Asset Tokenization Studio factory for the configured Hedera network. Returns the diamond address, transaction hash, and block number.',
   parameters: deploySecurityParameters,
   execute: async (
     client: Client,
@@ -131,7 +132,7 @@ export const atsDeploySecurityTool = (_context: Context): Tool => ({
       diamondAddress: result.diamondAddress,
       txHash: result.txHash,
       blockNumber: result.blockNumber,
-      network: 'testnet',
+      network: loadEnv().HEDERA_NETWORK,
     };
   },
   outputParser: (rawOutput: string) => {
@@ -139,7 +140,7 @@ export const atsDeploySecurityTool = (_context: Context): Tool => ({
       const parsed = JSON.parse(rawOutput) as DeploySecurityResult;
       return {
         raw: parsed,
-        humanMessage: `Deployed Equity \u2014 diamond ${parsed.diamondAddress}, tx ${parsed.txHash}, block ${parsed.blockNumber} (testnet).`,
+        humanMessage: `Deployed Equity \u2014 diamond ${parsed.diamondAddress}, tx ${parsed.txHash}, block ${parsed.blockNumber} (${parsed.network}).`,
       };
     } catch {
       return { raw: rawOutput, humanMessage: rawOutput };

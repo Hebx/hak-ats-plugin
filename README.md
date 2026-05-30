@@ -1,27 +1,39 @@
 # `@hebx/hak-ats-plugin`
 
-A [Hedera Agent Kit](https://github.com/hashgraph/hedera-agent-kit-js) v4 plugin that lets an AI agent issue and manage tokenized securities on Hedera using the [Asset Tokenization Studio](https://github.com/hashgraph/asset-tokenization-studio) (ATS) reference contracts.
+A [Hedera Agent Kit](https://github.com/hashgraph/hedera-agent-kit-js) v4 plugin that lets an AI agent deploy and manage tokenized securities (equity and bonds) on Hedera using the [Asset Tokenization Studio](https://github.com/hashgraph/asset-tokenization-studio) (ATS) reference contracts, with an HCS-backed registry and audit trail.
 
 ## Status
 
-**Pre-release (`0.1.0`), public testnet only.** The tool surface is stable and exercised against live testnet, but the API may change before `1.0.0`. Do not point this at mainnet — the `mainnet-deny` policy hard-fails if you try.
+**Pre-release (`0.3.1`).** The tool surface is exercised against live testnet, but the API may change before `1.0.0`. Network is **opt-in**: set `HEDERA_NETWORK=testnet` (default) or `HEDERA_NETWORK=mainnet` and you operate on that network, at your own risk. There is no mainnet deny. The max-supply-cap and jurisdiction-allowlist policies stay enforced on every network.
 
 ## What this is
 
-A typed plugin that exposes high-level AI tools for ERC-1400-style security tokens on Hedera. Calls go straight to the deployed ATS diamond contracts over JSON-RPC (Hashio) using the official typechain artifacts — no browser wallet or custodial provider required.
+A typed plugin that exposes high-level AI tools for ERC-1400 / ERC-3643 security tokens on Hedera. Calls go straight to the deployed ATS diamond contracts over JSON-RPC (Hashio) using the official typechain artifacts — no browser wallet or custodial provider required. A Hedera Consensus Service topic provides an independent registry and audit trail.
 
 | Tool | Kind | What it does |
 |---|---|---|
-| `ats_deploy_security` | tx | Deploys an Equity diamond from the public testnet ATS factory |
+| `ats_deploy_security` | tx | Deploys an Equity diamond from the ATS factory |
+| `ats_deploy_bond` | tx | Deploys a Bond diamond with par value + start/maturity schedule |
 | `ats_issue_to_investor` | tx | Mints security units to an investor (grants `ISSUER_ROLE`, then `issue()`) |
 | `ats_compliant_transfer` | tx | Controller transfer between holders via the ERC-1644 controller path |
+| `ats_force_transfer` | tx | Regulatory clawback: force-move units without holder consent (ERC-1644) |
+| `ats_set_paused` | tx | Pause / unpause all transfers on a security (ERC-1400 pause facet) |
 | `ats_pay_dividend_manual` | tx | Reads the cap table and fans out HBAR to holders pro-rata |
 | `ats_get_security_info` | query | Name, symbol, supply, paused state |
 | `ats_get_cap_table` | query | Holder balances, read from the mirror node |
+| `ats_registry_anchor` | hcs | Register a security or log a corporate action to the HCS registry |
+| `ats_registry_resolve` | hcs | Resolve a security by name / symbol / ISIN to its diamond address |
+| `ats_registry_list` | hcs | Read back the registry audit trail from the mirror node |
+| `ats_kyc_register_investor` | hcs | Anchor a tamper-evident investor KYC attestation (GRANTED / REVOKED) |
+| `ats_anchor_document` | hcs | Anchor a SHA-256 digest of an off-chain document as the document-of-record |
 
 Notes on behavior, confirmed on testnet:
 - **Issuance needs no separate register/KYC step** under the default deploy config (blocklist mode, internal KYC off). `ats_issue_to_investor` handles the role grant and mint in one path.
-- **Dividends are an off-chain HBAR fan-out, by design.** The public testnet factory's equity config does not include the on-chain `DividendFacet`, so `ats_pay_dividend_manual` builds the cap table from mirror-node transfers and distributes HBAR pro-rata via a `TransferTransaction`.
+- **KYC is an HCS attestation, not on-chain enforcement.** The default deploy config ships with internal KYC deactivated and the ERC-3643 identity-registry path requires issuer/role setup that is out of scope for the baseline. `ats_kyc_register_investor` records an auditable attestation; binding to the on-chain identity registry to gate transfers is a roadmap item.
+- **Dividends are an off-chain HBAR fan-out, by design.** The reference factory's equity config does not include the on-chain `DividendFacet`, so `ats_pay_dividend_manual` builds the cap table from mirror-node transfers and distributes HBAR pro-rata via a `TransferTransaction`.
+- **Bonds deploy the core instrument.** `ats_deploy_bond` sets currency, par value, and start/maturity dates; coupon-rate facets are a roadmap item.
+- **The registry topic is discovered within a session.** The first registry write (`ats_registry_anchor` / `ats_kyc_register_investor` / `ats_anchor_document`) creates an HCS topic and returns its id. Read tools (`ats_registry_resolve`, `ats_registry_list`) reuse that topic automatically for the rest of the process, so a deploy-register-then-resolve flow works without configuration. Set `HCS_REGISTRY_TOPIC_ID` to pin the **same** registry across separate processes.
+- **Symbols are capped at 8 characters** (an ATS contract constraint); longer symbols are rejected at deploy time.
 
 ## Install
 
@@ -113,7 +125,7 @@ npm run lint
 npm run test:run        # ⚠️ live testnet — see below
 ```
 
-`npm run test:run` runs the **entire suite against live Hedera testnet with no mocks** — every deploy spends real testnet HBAR (a full run is ~16 deploys, several HBAR). Run a single file while iterating:
+`npm run test:run` runs the **entire suite against live Hedera testnet with no mocks** — every deploy spends real testnet HBAR (a full run is ~20+ contract deploys plus HCS topic/message fees, several HBAR). The registry suite (`tests/registry/`) only writes HCS messages, so it is the cheapest to run. Run a single file while iterating:
 
 ```bash
 npx vitest run tests/<file>.test.ts
@@ -126,12 +138,13 @@ Keep a funded testnet operator in `.env` and top it up before a full suite run.
 - **Tools** (`src/tools/`) — each is a `BaseTool` with Zod params and a `coreAction`.
 - **Contracts** (`src/contracts/`) — typed `ethers.Contract` wrappers over the ATS typechain artifacts; `GAS` limits are tuned to measured testnet usage (see `factory-client.ts`).
 - **Signing** (`src/adapters/local-key-signer.ts`) — builds an `ethers.Wallet` from the env ECDSA key against Hashio.
-- **Policies** (`src/policies/`) — Agent Kit hook lifecycle: mainnet-deny, max-supply cap, jurisdiction allow-list.
+- **Policies** (`src/policies/`) — Agent Kit hook lifecycle: max-supply cap, jurisdiction allow-list (enforced on every network).
+- **Registry** (`src/adapters/hcs-registry.ts`) — HCS topic create + JSON message submit + mirror-node read, backing security registration, name resolution, corporate-action trail, KYC attestations, and document anchoring.
 - **Mirror node** (`src/adapters/mirror-node.ts`) — resolves EVM/contract addresses and reads holder balances for the cap table.
 
 ## Safety
 
-- **Testnet only by default.** The `mainnet-deny` policy hard-fails any tool call when `HEDERA_NETWORK !== 'testnet'`.
+- **Network is opt-in.** `HEDERA_NETWORK` selects testnet (default) or mainnet. Mainnet moves real value and is irreversible; there is no separate flag and no deny — setting the network is the deliberate choice.
 - **Supply cap.** Per-deploy issuance is bounded by `MAX_SUPPLY_CAP`.
 - **Jurisdiction filter.** Country handling is enforced against `JURISDICTION_ALLOWLIST`.
 - **No secrets in the repo.** Operator keys live only in `.env` (git-ignored). Run `npm run secrets:scan` (gitleaks) before publishing.

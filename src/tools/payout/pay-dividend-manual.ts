@@ -5,7 +5,7 @@ import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { readCapTable, resolveEvmToAccountId } from '../../adapters/mirror-node.js';
 import { getHederaClient } from '../../adapters/hedera-client.js';
 import { getLocalSigner } from '../../adapters/local-key-signer.js';
-import { loadEnv } from '../../env.js';
+import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_PAY_DIVIDEND_MANUAL_TOOL = 'ats_pay_dividend_manual';
@@ -45,7 +45,7 @@ interface PayDividendResult {
   payments: DividendPayment[];
   transactionId: string;
   status: string;
-  network: 'testnet';
+  network: HederaNetwork;
 }
 
 /**
@@ -135,7 +135,7 @@ export const atsPayDividendManualTool = (_context: Context): Tool => ({
       payments,
       transactionId: resp.transactionId.toString(),
       status: receipt.status.toString(),
-      network: 'testnet',
+      network: env.HEDERA_NETWORK,
     };
   },
   outputParser: (rawOutput: string) => {

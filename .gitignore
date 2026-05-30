@@ -15,3 +15,6 @@ scripts/spike-*.ts
 scripts/decode-*.ts
 scripts/transfer-hbar.mjs
 
+
+# Packed tarballs from npm pack
+*.tgz
