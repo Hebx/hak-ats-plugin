@@ -57,7 +57,7 @@ export const atsRegistryAnchorTool = (_context: Context): Tool => ({
   method: ATS_REGISTRY_ANCHOR_TOOL,
   name: 'Anchor Registry Record',
   description:
-    'Writes a tamper-evident record to the HCS securities registry on the configured Hedera network: either registering a deployed security (name, symbol, ISIN, diamond address) for later name->address resolution, or logging a corporate action (issue/transfer/dividend/pause) with its transaction hash. Returns the topic id and sequence number.',
+    'Writes a tamper-evident record to the HCS securities registry on the configured Hedera network: either registering a deployed security (name, symbol, ISIN, diamond address) for later name->address resolution, or logging a corporate action (issue/transfer/dividend/pause) with its transaction hash. recordType is only "security" or "corporate_action". This tool does NOT anchor documents — use ats_anchor_document for term sheets/prospectuses/resolutions. Returns the topic id and sequence number.',
   parameters: registryAnchorParameters,
   execute: async (_client: Client, _ctx: Context, params: RegistryAnchorParams): Promise<RegistryAnchorResult> => {
     const env = loadEnv();

@@ -12,7 +12,8 @@ export const ATS_DEPLOY_SECURITY_TOOL = 'ats_deploy_security';
 const deploySecurityParameters = z.object({
   type: z
     .enum(['EQUITY'])
-    .describe('Security type. This tool deploys EQUITY; use ats_deploy_bond for bonds.'),
+    .default('EQUITY')
+    .describe('Security type. This tool deploys EQUITY (the default); use ats_deploy_bond for bonds.'),
   name: z.string().min(1).max(64).describe('On-chain display name of the security.'),
   symbol: z
     .string()

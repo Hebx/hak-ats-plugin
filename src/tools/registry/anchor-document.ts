@@ -49,7 +49,7 @@ export const atsAnchorDocumentTool = (_context: Context): Tool => ({
   method: ATS_ANCHOR_DOCUMENT_TOOL,
   name: 'Anchor Document',
   description:
-    'Anchors a SHA-256 digest of an off-chain document (term sheet, prospectus, resolution) to the HCS securities registry as a tamper-evident document-of-record. Accepts a precomputed sha256 or raw content to hash. Returns the topic id and sequence number.',
+    'Anchors an off-chain DOCUMENT (term sheet, prospectus, board resolution) to the HCS securities registry by its SHA-256 digest, as a tamper-evident document-of-record. Use THIS tool whenever the request is to anchor, attach, or record a document/term sheet/prospectus. Accepts a precomputed sha256 or raw content to hash. Returns the topic id and sequence number.',
   parameters: anchorDocumentParameters,
   execute: async (_client: Client, _ctx: Context, params: AnchorDocumentParams): Promise<AnchorDocumentResult> => {
     const env = loadEnv();
