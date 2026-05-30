@@ -15,12 +15,17 @@ import {
   atsCompliantTransferTool,
   ATS_COMPLIANT_TRANSFER_TOOL,
 } from './tools/security/compliant-transfer.js';
+import {
+  atsGetCapTableTool,
+  ATS_GET_CAP_TABLE_TOOL,
+} from './tools/query/get-cap-table.js';
 
 export {
   ATS_DEPLOY_SECURITY_TOOL,
   ATS_ISSUE_TO_INVESTOR_TOOL,
   ATS_GET_SECURITY_INFO_TOOL,
   ATS_COMPLIANT_TRANSFER_TOOL,
+  ATS_GET_CAP_TABLE_TOOL,
 };
 
 /**
@@ -44,6 +49,7 @@ export const atsPlugin: Plugin = {
     atsIssueToInvestorTool(context),
     atsGetSecurityInfoTool(context),
     atsCompliantTransferTool(context),
+    atsGetCapTableTool(context),
   ],
 };
 
