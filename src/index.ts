@@ -3,8 +3,16 @@ import {
   atsDeploySecurityTool,
   ATS_DEPLOY_SECURITY_TOOL,
 } from './tools/security/deploy-security.js';
+import {
+  atsIssueToInvestorTool,
+  ATS_ISSUE_TO_INVESTOR_TOOL,
+} from './tools/security/issue-to-investor.js';
+import {
+  atsGetSecurityInfoTool,
+  ATS_GET_SECURITY_INFO_TOOL,
+} from './tools/security/get-security-info.js';
 
-export { ATS_DEPLOY_SECURITY_TOOL };
+export { ATS_DEPLOY_SECURITY_TOOL, ATS_ISSUE_TO_INVESTOR_TOOL, ATS_GET_SECURITY_INFO_TOOL };
 
 /**
  * Hedera Agent Kit v4 plugin exposing AI tools for the Asset Tokenization Studio.
@@ -22,7 +30,11 @@ export const atsPlugin: Plugin = {
   version: '0.1.0',
   description:
     'Tokenized securities (ERC-1400 / Asset Tokenization Studio) on Hedera. Deploy, manage, and query Equity and Bond instruments.',
-  tools: (context: Context): Tool[] => [atsDeploySecurityTool(context)],
+  tools: (context: Context): Tool[] => [
+    atsDeploySecurityTool(context),
+    atsIssueToInvestorTool(context),
+    atsGetSecurityInfoTool(context),
+  ],
 };
 
 export default atsPlugin;
