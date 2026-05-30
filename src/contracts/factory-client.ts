@@ -17,10 +17,24 @@ import { resolveContractEvmAddress } from '../adapters/mirror-node.js';
 export const DEFAULT_ADMIN_ROLE =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-/** Gas limits copied from @hashgraph/asset-tokenization-sdk Constants. */
+/**
+ * Gas limits for ATS contract calls.
+ *
+ * The upstream @hashgraph/asset-tokenization-sdk hardcodes 15M for a diamond deploy, but
+ * that is ~11x the real cost: testnet deploys measure ~1.32M gas used and bill ~1.04 HBAR
+ * (Hedera charges actual usage, not the limit). The danger is client-side: ethers reserves
+ * `gasLimit × maxFeePerGas` up front as a balance pre-flight, and Hashio's gas price is
+ * dynamic. At a ~2x price spike, a 15M limit reserves ~24.7 HBAR and trips INSUFFICIENT_FUNDS
+ * on any operator under that — even though the tx would only spend ~1 HBAR.
+ *
+ * We size CREATE to 4M (≈3x measured usage) so the reservation stays ~3.3 HBAR at normal
+ * gas price and ~6.6 HBAR even at a 2x spike, while keeping ample headroom over real cost.
+ * The other limits already sit ~3x over their measured usage (issue ~360k, transfer ~309k,
+ * grantRole ~175k) and reserve well under 1 HBAR each, so they are left as-is.
+ */
 export const GAS = {
-  CREATE_EQUITY: 15_000_000,
-  CREATE_BOND: 15_000_000,
+  CREATE_EQUITY: 4_000_000,
+  CREATE_BOND: 4_000_000,
   ISSUE: 1_000_000,
   TRANSFER: 1_000_000,
   SET_IDENTITY_REGISTRY: 700_000,
