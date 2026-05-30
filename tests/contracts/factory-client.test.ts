@@ -8,11 +8,12 @@
  * Cost per run: ~3-4 HBAR of testnet gas. Idempotent: each run deploys a new diamond.
  */
 import 'dotenv/config';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { it, expect, beforeAll } from 'vitest';
 import { FactoryClient, type EquityRights, type SecurityCommonInfo } from '../../src/contracts/factory-client.js';
 import { getLocalSigner } from '../../src/adapters/local-key-signer.js';
+import { describeLive } from '../helpers/live.js';
 
-describe('FactoryClient.deployEquity (live testnet)', () => {
+describeLive('FactoryClient.deployEquity (live testnet)', () => {
   let client: FactoryClient;
 
   beforeAll(() => {

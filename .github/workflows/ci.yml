@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# The ATS typechain artifacts produce very large TS types; tsc needs more than the
+# default ~2GB V8 heap or it OOMs on the runner.
+env:
+  NODE_OPTIONS: --max-old-space-size=4096
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,6 +25,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run build
+      # Live testnet suites self-skip when no funded operator is in the env (see
+      # tests/helpers/live.ts), so this runs the unit tests in CI and the full
+      # live suite only where an operator .env is present.
       - run: npm run test:run
       - run: npm run secrets:scan
         continue-on-error: true

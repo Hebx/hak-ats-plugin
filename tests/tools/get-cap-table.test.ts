@@ -5,10 +5,11 @@
  * from the mirror node and assert it matches on-chain balances. No mocks.
  */
 import 'dotenv/config';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { it, expect, beforeAll } from 'vitest';
 import type { Client } from '@hiero-ledger/sdk';
 import { atsPlugin } from '../../src/index.js';
 import { getLocalSigner } from '../../src/adapters/local-key-signer.js';
+import { describeLive } from '../helpers/live.js';
 
 const fakeClient = {} as Client;
 
@@ -18,7 +19,7 @@ function tool(method: string) {
   return t;
 }
 
-describe('ats_get_cap_table (live testnet)', () => {
+describeLive('ats_get_cap_table (live testnet)', () => {
   let diamondAddress: string;
   const investor = process.env.INVESTOR_EVM_ADDRESS as string;
   let operator: string;

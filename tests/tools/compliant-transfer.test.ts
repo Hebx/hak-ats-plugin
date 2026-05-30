@@ -5,11 +5,12 @@
  * path → assert both balances. No mocks; real on-chain calls.
  */
 import 'dotenv/config';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { it, expect, beforeAll } from 'vitest';
 import type { Client } from '@hiero-ledger/sdk';
 import { atsPlugin } from '../../src/index.js';
 import { SecurityClient } from '../../src/contracts/security-client.js';
 import { getLocalSigner } from '../../src/adapters/local-key-signer.js';
+import { describeLive } from '../helpers/live.js';
 
 const fakeClient = {} as Client;
 
@@ -19,7 +20,7 @@ function tool(method: string) {
   return t;
 }
 
-describe('ats_compliant_transfer (live testnet)', () => {
+describeLive('ats_compliant_transfer (live testnet)', () => {
   let diamondAddress: string;
   const investor = process.env.INVESTOR_EVM_ADDRESS as string;
   let operator: string;

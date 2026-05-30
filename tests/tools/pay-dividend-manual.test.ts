@@ -5,11 +5,12 @@
  * plan, balanced distribution, and SUCCESS receipt. No mocks; real HBAR moves.
  */
 import 'dotenv/config';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { it, expect, beforeAll, afterAll } from 'vitest';
 import type { Client } from '@hiero-ledger/sdk';
 import { atsPlugin } from '../../src/index.js';
 import { getLocalSigner } from '../../src/adapters/local-key-signer.js';
 import { closeHederaClient } from '../../src/adapters/hedera-client.js';
+import { describeLive } from '../helpers/live.js';
 
 const fakeClient = {} as Client;
 
@@ -19,7 +20,7 @@ function tool(method: string) {
   return t;
 }
 
-describe('ats_pay_dividend_manual (live testnet)', () => {
+describeLive('ats_pay_dividend_manual (live testnet)', () => {
   let diamondAddress: string;
   const investor = process.env.INVESTOR_EVM_ADDRESS as string;
   let operator: string;

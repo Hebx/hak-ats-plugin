@@ -6,9 +6,10 @@
  * No mocks — real on-chain calls. Cost: a few HBAR of testnet gas per run.
  */
 import 'dotenv/config';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { it, expect, beforeAll } from 'vitest';
 import type { Client } from '@hiero-ledger/sdk';
 import { atsPlugin } from '../../src/index.js';
+import { describeLive } from '../helpers/live.js';
 
 const fakeClient = {} as Client;
 
@@ -37,7 +38,7 @@ async function deployFreshDiamond(): Promise<string> {
   return out.diamondAddress as string;
 }
 
-describe('ats_issue_to_investor + ats_get_security_info (live testnet)', () => {
+describeLive('ats_issue_to_investor + ats_get_security_info (live testnet)', () => {
   let diamondAddress: string;
   const investor = process.env.INVESTOR_EVM_ADDRESS as string;
 

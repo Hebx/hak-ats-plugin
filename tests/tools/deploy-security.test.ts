@@ -3,12 +3,13 @@
  * Deploys a real Equity contract using only the inputs an LLM would supply.
  */
 import 'dotenv/config';
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import type { Client } from '@hiero-ledger/sdk';
 import { atsPlugin } from '../../src/index.js';
 import { getLocalSigner } from '../../src/adapters/local-key-signer.js';
+import { describeLive } from '../helpers/live.js';
 
-describe('ats_deploy_security plugin tool (live testnet)', () => {
+describeLive('ats_deploy_security plugin tool (live testnet)', () => {
   it('deploys an Equity through the BaseTool execute path', async () => {
     if (process.env.HEDERA_NETWORK !== 'testnet') {
       throw new Error('refusing to run live tests outside testnet');
