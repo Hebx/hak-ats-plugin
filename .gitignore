@@ -12,4 +12,6 @@ coverage/
 .local-plans/
 .local/
 scripts/spike-*.ts
+scripts/decode-*.ts
+scripts/transfer-hbar.mjs
 
