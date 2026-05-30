@@ -18,7 +18,7 @@ const issueToInvestorParameters = z.object({
   amount: z
     .number()
     .int()
-    .positive()
+    .min(1)
     .describe('Number of security units to mint to the investor.'),
 });
 

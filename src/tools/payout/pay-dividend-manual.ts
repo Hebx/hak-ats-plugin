@@ -17,7 +17,7 @@ const payDividendParameters = z.object({
     .describe('EVM address of the deployed security whose holders receive the dividend.'),
   totalAmountHbar: z
     .number()
-    .positive()
+    .refine((v) => v > 0, { message: 'totalAmountHbar must be greater than 0' })
     .describe('Total HBAR to distribute across all holders, pro-rata by balance.'),
   excludeTreasury: z
     .boolean()
