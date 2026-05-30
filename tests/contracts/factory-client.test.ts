@@ -64,7 +64,6 @@ describe('FactoryClient.deployEquity (live testnet)', () => {
     expect(code).not.toBe('0x');
     expect(code.length).toBeGreaterThan(2);
 
-    // eslint-disable-next-line no-console
     console.log('Deployed Equity:', result);
   }, 90_000);
 });

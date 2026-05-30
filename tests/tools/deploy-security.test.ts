@@ -49,7 +49,6 @@ describe('ats_deploy_security plugin tool (live testnet)', () => {
     const code = await signer.provider.getCode(out.diamondAddress);
     expect(code.length).toBeGreaterThan(2);
 
-    // eslint-disable-next-line no-console
     console.log('Plugin-tool deploy:', out);
   }, 90_000);
 

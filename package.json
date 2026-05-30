@@ -47,6 +47,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@hashgraph/hedera-agent-kit": "^4.0.0",
     "@hashgraph/hedera-agent-kit-langchain": "^1.0.0",
     "@hiero-ledger/sdk": "^2.81.0",
@@ -58,6 +59,7 @@
     "prettier": "^3.4.0",
     "tsx": "^4.19.0",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.60.0",
     "vitest": "^3.0.0"
   },
   "engines": {
