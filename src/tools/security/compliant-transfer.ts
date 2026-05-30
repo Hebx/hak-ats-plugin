@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
+import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_COMPLIANT_TRANSFER_TOOL = 'ats_compliant_transfer';
@@ -35,7 +36,7 @@ interface CompliantTransferResult {
   amount: string;
   txHash: string;
   blockNumber: number;
-  network: 'testnet';
+  network: HederaNetwork;
 }
 
 /**
@@ -51,7 +52,7 @@ export const atsCompliantTransferTool = (_context: Context): Tool => ({
   method: ATS_COMPLIANT_TRANSFER_TOOL,
   name: 'Compliant Transfer',
   description:
-    'Transfers units of a tokenized security between holders on Hedera testnet, routed through the security compliance modules via the ERC-1644 controller path. Verifies the source holder has sufficient balance, then transfers. Returns the transaction hash and block number.',
+    'Transfers units of a tokenized security between holders on the configured Hedera network, routed through the security compliance modules via the ERC-1644 controller path. Verifies the source holder has sufficient balance, then transfers. Returns the transaction hash and block number.',
   parameters: compliantTransferParameters,
   execute: async (
     client: Client,
@@ -82,7 +83,7 @@ export const atsCompliantTransferTool = (_context: Context): Tool => ({
       amount: result.amount,
       txHash: result.txHash,
       blockNumber: result.blockNumber,
-      network: 'testnet',
+      network: loadEnv().HEDERA_NETWORK,
     };
   },
   outputParser: (rawOutput: string) => {
@@ -90,7 +91,7 @@ export const atsCompliantTransferTool = (_context: Context): Tool => ({
       const parsed = JSON.parse(rawOutput) as CompliantTransferResult;
       return {
         raw: parsed,
-        humanMessage: `Transferred ${parsed.amount} units ${parsed.from} \u2192 ${parsed.to} on diamond ${parsed.diamondAddress} \u2014 tx ${parsed.txHash}, block ${parsed.blockNumber} (testnet).`,
+        humanMessage: `Transferred ${parsed.amount} units ${parsed.from} \u2192 ${parsed.to} on diamond ${parsed.diamondAddress} \u2014 tx ${parsed.txHash}, block ${parsed.blockNumber} (${parsed.network}).`,
       };
     } catch {
       return { raw: rawOutput, humanMessage: rawOutput };

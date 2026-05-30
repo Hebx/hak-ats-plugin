@@ -37,6 +37,7 @@ export const GAS = {
   CREATE_BOND: 4_000_000,
   ISSUE: 1_000_000,
   TRANSFER: 1_000_000,
+  PAUSE: 300_000,
   SET_IDENTITY_REGISTRY: 700_000,
 } as const;
 
@@ -98,6 +99,24 @@ export interface DeployEquityResult {
   blockNumber: number;
 }
 
+export interface BondDetails {
+  /** ISO 4217 currency hex (e.g. 0x555344 for USD). */
+  currency: string;
+  /** Face value per unit. */
+  nominalValue: bigint;
+  nominalValueDecimals: number;
+  /** Unix seconds. Coupon/issuance start. */
+  startingDate: number;
+  /** Unix seconds. Must be strictly after startingDate. */
+  maturityDate: number;
+}
+
+export interface DeployBondResult {
+  diamondAddress: string;
+  txHash: string;
+  blockNumber: number;
+}
+
 export class FactoryClient {
   private readonly env = loadEnv();
   private readonly signer = getLocalSigner();
@@ -127,7 +146,7 @@ export class FactoryClient {
   }
 
   /** Build the SecurityDataStruct payload required by IFactory.deployEquity. */
-  buildSecurityData(common: SecurityCommonInfo, resolverEvm: string): {
+  buildSecurityData(common: SecurityCommonInfo, resolverEvm: string, configId?: string): {
     arePartitionsProtected: boolean;
     isMultiPartition: boolean;
     resolver: string;
@@ -151,7 +170,7 @@ export class FactoryClient {
       isMultiPartition: false,
       resolver: resolverEvm,
       resolverProxyConfiguration: {
-        key: this.env.ATS_EQUITY_CONFIG_ID,
+        key: configId ?? this.env.ATS_EQUITY_CONFIG_ID,
         version: this.env.ATS_CONFIG_VERSION,
       },
       rbacs: [{ role: DEFAULT_ADMIN_ROLE, members: [common.diamondOwnerEvm] }],
@@ -259,6 +278,74 @@ export class FactoryClient {
   private parseEquityDeployedEvent(receipt: {
     logs: ReadonlyArray<{ topics: ReadonlyArray<string>; data: string; address: string }>;
   }): string {
+    return this.parseDeployedEvent(receipt, 'EquityDeployed', 'equityAddress');
+  }
+
+  /**
+   * Deploy a new Bond diamond. Returns the diamond address, tx hash, and block number.
+   *
+   * Uses the generic IFactory.deployBond entrypoint with a BondDetails struct
+   * (currency, nominal value, starting/maturity dates). The bond config id
+   * (ATS_BOND_CONFIG_ID) selects the bond facet set on the resolver.
+   *
+   * Throws if the receipt is missing the BondDeployed event or the transaction reverts.
+   */
+  async deployBond(
+    common: SecurityCommonInfo,
+    details: BondDetails,
+  ): Promise<DeployBondResult> {
+    if (details.maturityDate <= details.startingDate) {
+      throw new Error('bond maturityDate must be strictly after startingDate');
+    }
+    const { factoryEvm, resolverEvm } = await this.ensureAddresses();
+    const factory = IFactory__factory.connect(
+      factoryEvm,
+      this.signer.wallet as unknown as Parameters<typeof IFactory__factory.connect>[1],
+    );
+
+    const securityData = this.buildSecurityData(common, resolverEvm, this.env.ATS_BOND_CONFIG_ID);
+    const regulationData = this.buildRegulationData(common);
+
+    const bondData = {
+      security: securityData,
+      bondDetails: {
+        currency: details.currency,
+        nominalValue: details.nominalValue,
+        nominalValueDecimals: details.nominalValueDecimals,
+        startingDate: BigInt(details.startingDate),
+        maturityDate: BigInt(details.maturityDate),
+      },
+      // No proceeds routing for the baseline bond; coupon facets are a roadmap item.
+      proceedRecipients: [] as string[],
+      proceedRecipientsData: [] as string[],
+    };
+
+    const tx = await factory.deployBond(bondData, regulationData, {
+      gasLimit: GAS.CREATE_BOND,
+    });
+    const receipt = await tx.wait();
+    if (!receipt) throw new Error(`deployBond tx ${tx.hash} produced no receipt`);
+
+    const diamondAddress = this.parseDeployedEvent(receipt, 'BondDeployed', 'bondAddress');
+    return {
+      diamondAddress,
+      txHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+    };
+  }
+
+  /**
+   * Find a *Deployed event in a receipt and return the deployed diamond address.
+   * Shared by equity and bond: the factory emits `<Type>Deployed(address indexed
+   * deployer, address <type>Address, …)`, so args[1] is always the new diamond.
+   */
+  private parseDeployedEvent(
+    receipt: {
+      logs: ReadonlyArray<{ topics: ReadonlyArray<string>; data: string; address: string }>;
+    },
+    eventName: string,
+    addressArg: string,
+  ): string {
     const factoryIface = Factory__factory.createInterface();
 
     for (const log of receipt.logs) {
@@ -267,11 +354,9 @@ export class FactoryClient {
           topics: [...log.topics],
           data: log.data,
         });
-        if (parsed?.name === 'EquityDeployed') {
-          // EquityDeployed(address indexed deployer, address equityAddress, …)
-          // args[0] is the deployer; args[1] is the new diamond.
+        if (parsed?.name === eventName) {
           const addr =
-            (parsed.args.equityAddress as string | undefined) ??
+            (parsed.args[addressArg] as string | undefined) ??
             (parsed.args[1] as string | undefined);
           if (typeof addr === 'string' && addr.startsWith('0x')) return addr;
         }
@@ -279,6 +364,6 @@ export class FactoryClient {
         // not a Factory event — skip
       }
     }
-    throw new Error('EquityDeployed event not found in receipt logs');
+    throw new Error(`${eventName} event not found in receipt logs`);
   }
 }
