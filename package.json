@@ -1,7 +1,7 @@
 {
   "name": "@hebx/hak-ats-plugin",
   "version": "0.1.0",
-  "description": "Hedera Agent Kit v4 plugin for Asset Tokenization Studio — equity issuance, KYC, dividends",
+  "description": "Hedera Agent Kit v4 plugin for Asset Tokenization Studio — deploy ERC-1400 equity securities, issue to investors, compliant transfers, and HBAR dividend payouts on Hedera",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -55,6 +55,7 @@
     "@hashgraph/hedera-agent-kit-langchain": "^1.0.0",
     "@hiero-ledger/sdk": "^2.81.0",
     "@langchain/core": "^1.1.48",
+    "@langchain/google-genai": "^2.1.31",
     "@langchain/langgraph": "^1.3.2",
     "@langchain/openai": "^1.4.7",
     "@types/node": "^20.0.0",
