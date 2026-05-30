@@ -53,7 +53,7 @@ export {
  */
 export const atsPlugin: Plugin = {
   name: 'hak-ats-plugin',
-  version: '0.1.0',
+  version: '0.2.0',
   description:
     'Tokenized securities (ERC-1400 / Asset Tokenization Studio) on Hedera. Deploy, manage, and query Equity and Bond instruments.',
   tools: (context: Context): Tool[] => [
