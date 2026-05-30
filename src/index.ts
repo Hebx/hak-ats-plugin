@@ -19,6 +19,10 @@ import {
   atsGetCapTableTool,
   ATS_GET_CAP_TABLE_TOOL,
 } from './tools/query/get-cap-table.js';
+import {
+  atsPayDividendManualTool,
+  ATS_PAY_DIVIDEND_MANUAL_TOOL,
+} from './tools/payout/pay-dividend-manual.js';
 
 export {
   ATS_DEPLOY_SECURITY_TOOL,
@@ -26,6 +30,7 @@ export {
   ATS_GET_SECURITY_INFO_TOOL,
   ATS_COMPLIANT_TRANSFER_TOOL,
   ATS_GET_CAP_TABLE_TOOL,
+  ATS_PAY_DIVIDEND_MANUAL_TOOL,
 };
 
 /**
@@ -50,6 +55,7 @@ export const atsPlugin: Plugin = {
     atsGetSecurityInfoTool(context),
     atsCompliantTransferTool(context),
     atsGetCapTableTool(context),
+    atsPayDividendManualTool(context),
   ],
 };
 

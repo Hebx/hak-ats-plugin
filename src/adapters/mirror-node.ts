@@ -50,6 +50,46 @@ export async function resolveContractEvmAddress(
 
 export function resetMirrorCache(): void {
   evmAddressCache.clear();
+  accountIdCache.clear();
+}
+
+const accountIdCache = new Map<string, string>();
+
+interface MirrorAccountResponse {
+  account: string;
+  evm_address: string;
+}
+
+/**
+ * Resolve a 0x EVM address to its canonical Hedera account id (0.0.X) via the mirror
+ * node. Required for HBAR TransferTransaction, which addresses accounts by id. Throws
+ * if the address has no associated Hedera account (e.g. a contract-only address).
+ */
+export async function resolveEvmToAccountId(
+  evmAddress: string,
+  mirrorBaseUrl: string,
+): Promise<string> {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(evmAddress)) {
+    throw new Error(`invalid EVM address: ${evmAddress}`);
+  }
+  const key = evmAddress.toLowerCase();
+  const cached = accountIdCache.get(key);
+  if (cached) return cached;
+
+  const base = mirrorBaseUrl.replace(/\/+$/, '');
+  const root = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+  const res = await fetch(`${root}/accounts/${evmAddress}`);
+  if (!res.ok) {
+    throw new Error(
+      `no Hedera account for ${evmAddress} (mirror node ${res.status}); HBAR payout requires a real account`,
+    );
+  }
+  const body = (await res.json()) as MirrorAccountResponse;
+  if (!/^0\.0\.\d+$/.test(body.account ?? '')) {
+    throw new Error(`mirror node response missing account id for ${evmAddress}`);
+  }
+  accountIdCache.set(key, body.account);
+  return body.account;
 }
 
 /** Canonical ERC-20 Transfer(address,address,uint256) event topic. */
