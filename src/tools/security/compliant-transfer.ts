@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
-import { loadEnv } from '../../env.js';
+import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_COMPLIANT_TRANSFER_TOOL = 'ats_compliant_transfer';
 
@@ -54,14 +54,11 @@ export const atsCompliantTransferTool = (_context: Context): Tool => ({
     'Transfers units of a tokenized security between holders on Hedera testnet, routed through the security compliance modules via the ERC-1644 controller path. Verifies the source holder has sufficient balance, then transfers. Returns the transaction hash and block number.',
   parameters: compliantTransferParameters,
   execute: async (
-    _client: Client,
-    _ctx: Context,
+    client: Client,
+    ctx: Context,
     params: CompliantTransferParams,
   ): Promise<CompliantTransferResult> => {
-    const env = loadEnv();
-    if (env.HEDERA_NETWORK !== 'testnet') {
-      throw new Error('ats_compliant_transfer refuses to run outside testnet');
-    }
+    await enforcePreToolPolicies(defaultPolicies(), ATS_COMPLIANT_TRANSFER_TOOL, params, ctx, client);
 
     const security = new SecurityClient(params.diamondAddress);
     const amount = BigInt(params.amount);

@@ -3,7 +3,7 @@ import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { FactoryClient, type EquityRights, type SecurityCommonInfo } from '../../contracts/factory-client.js';
 import { getLocalSigner } from '../../adapters/local-key-signer.js';
-import { loadEnv } from '../../env.js';
+import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_DEPLOY_SECURITY_TOOL = 'ats_deploy_security';
 
@@ -70,20 +70,6 @@ function currencyAsBytes3(code: string): string {
   return `0x${bytes.toString('hex')}`;
 }
 
-function jurisdictionViolation(countries: string, allowlist: string[]): string | undefined {
-  if (!countries.trim()) return undefined;
-  const requested = countries
-    .split(',')
-    .map((c) => c.trim().toUpperCase())
-    .filter(Boolean);
-  for (const c of requested) {
-    if (!allowlist.includes(c)) {
-      return `country ${c} is not in JURISDICTION_ALLOWLIST (${allowlist.join(',')})`;
-    }
-  }
-  return undefined;
-}
-
 /**
  * Build the @hashgraph/hedera-agent-kit Tool that deploys a new security diamond.
  *
@@ -98,27 +84,13 @@ export const atsDeploySecurityTool = (_context: Context): Tool => ({
     'Deploys a new tokenized security (Equity) on the Hedera-deployed Asset Tokenization Studio factory. Returns the diamond address, transaction hash, and block number. Operates on Hedera testnet only.',
   parameters: deploySecurityParameters,
   execute: async (
-    _client: Client,
-    _ctx: Context,
+    client: Client,
+    ctx: Context,
     params: DeploySecurityParams,
   ): Promise<DeploySecurityResult> => {
-    const env = loadEnv();
-
-    if (env.HEDERA_NETWORK !== 'testnet') {
-      throw new Error('ats_deploy_security refuses to run outside testnet');
-    }
-
-    if (params.maxSupply > env.MAX_SUPPLY_CAP) {
-      throw new Error(
-        `maxSupply ${params.maxSupply} exceeds plugin cap MAX_SUPPLY_CAP=${env.MAX_SUPPLY_CAP}`,
-      );
-    }
-
-    const allowlist = env.JURISDICTION_ALLOWLIST.split(',')
-      .map((c) => c.trim().toUpperCase())
-      .filter(Boolean);
-    const violation = jurisdictionViolation(params.countries, allowlist);
-    if (violation) throw new Error(violation);
+    // Network gate, max-supply cap, and jurisdiction allowlist are enforced here as
+    // reusable HAK policies (single source of truth, shared across tools).
+    await enforcePreToolPolicies(defaultPolicies(), ATS_DEPLOY_SECURITY_TOOL, params, ctx, client);
 
     if (params.type !== 'EQUITY') {
       throw new Error(`only type=EQUITY is supported in this release; got ${params.type}`);

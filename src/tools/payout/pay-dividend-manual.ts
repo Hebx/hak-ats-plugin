@@ -6,6 +6,7 @@ import { readCapTable, resolveEvmToAccountId } from '../../adapters/mirror-node.
 import { getHederaClient } from '../../adapters/hedera-client.js';
 import { getLocalSigner } from '../../adapters/local-key-signer.js';
 import { loadEnv } from '../../env.js';
+import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_PAY_DIVIDEND_MANUAL_TOOL = 'ats_pay_dividend_manual';
 
@@ -66,14 +67,12 @@ export const atsPayDividendManualTool = (_context: Context): Tool => ({
     'Distributes HBAR pro-rata to the holders of a tokenized security on Hedera testnet, based on the mirror-node cap table. Used because on-chain dividend recording is unavailable on the testnet factory config. Returns the per-holder payment plan and the transaction id.',
   parameters: payDividendParameters,
   execute: async (
-    _client: AgentClient,
-    _ctx: Context,
+    agentClient: AgentClient,
+    ctx: Context,
     params: PayDividendParams,
   ): Promise<PayDividendResult> => {
+    await enforcePreToolPolicies(defaultPolicies(), ATS_PAY_DIVIDEND_MANUAL_TOOL, params, ctx, agentClient);
     const env = loadEnv();
-    if (env.HEDERA_NETWORK !== 'testnet') {
-      throw new Error('ats_pay_dividend_manual refuses to run outside testnet');
-    }
 
     const operatorEvm = getLocalSigner().evmAddress.toLowerCase();
     const capTable = await readCapTable(params.diamondAddress, env.HEDERA_MIRROR_NODE_URL);

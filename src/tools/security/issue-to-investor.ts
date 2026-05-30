@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
-import { loadEnv } from '../../env.js';
+import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
 
 export const ATS_ISSUE_TO_INVESTOR_TOOL = 'ats_issue_to_investor';
 
@@ -47,14 +47,11 @@ export const atsIssueToInvestorTool = (_context: Context): Tool => ({
     'Issues (mints) units of an existing tokenized security to an investor on Hedera testnet. Grants the issuer role to the operator if needed, then issues via ERC-1594. Returns the transaction hash and block number.',
   parameters: issueToInvestorParameters,
   execute: async (
-    _client: Client,
-    _ctx: Context,
+    client: Client,
+    ctx: Context,
     params: IssueToInvestorParams,
   ): Promise<IssueToInvestorResult> => {
-    const env = loadEnv();
-    if (env.HEDERA_NETWORK !== 'testnet') {
-      throw new Error('ats_issue_to_investor refuses to run outside testnet');
-    }
+    await enforcePreToolPolicies(defaultPolicies(), ATS_ISSUE_TO_INVESTOR_TOOL, params, ctx, client);
 
     const security = new SecurityClient(params.diamondAddress);
     const result = await security.issue(params.investor, BigInt(params.amount));

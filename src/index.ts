@@ -33,6 +33,13 @@ export {
   ATS_PAY_DIVIDEND_MANUAL_TOOL,
 };
 
+export {
+  MainnetDenyPolicy,
+  MaxSupplyCapPolicy,
+  JurisdictionAllowlistPolicy,
+  defaultPolicies,
+} from './policies/index.js';
+
 /**
  * Hedera Agent Kit v4 plugin exposing AI tools for the Asset Tokenization Studio.
  *
