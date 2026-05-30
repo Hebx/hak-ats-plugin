@@ -11,8 +11,17 @@ import {
   atsGetSecurityInfoTool,
   ATS_GET_SECURITY_INFO_TOOL,
 } from './tools/security/get-security-info.js';
+import {
+  atsCompliantTransferTool,
+  ATS_COMPLIANT_TRANSFER_TOOL,
+} from './tools/security/compliant-transfer.js';
 
-export { ATS_DEPLOY_SECURITY_TOOL, ATS_ISSUE_TO_INVESTOR_TOOL, ATS_GET_SECURITY_INFO_TOOL };
+export {
+  ATS_DEPLOY_SECURITY_TOOL,
+  ATS_ISSUE_TO_INVESTOR_TOOL,
+  ATS_GET_SECURITY_INFO_TOOL,
+  ATS_COMPLIANT_TRANSFER_TOOL,
+};
 
 /**
  * Hedera Agent Kit v4 plugin exposing AI tools for the Asset Tokenization Studio.
@@ -34,6 +43,7 @@ export const atsPlugin: Plugin = {
     atsDeploySecurityTool(context),
     atsIssueToInvestorTool(context),
     atsGetSecurityInfoTool(context),
+    atsCompliantTransferTool(context),
   ],
 };
 

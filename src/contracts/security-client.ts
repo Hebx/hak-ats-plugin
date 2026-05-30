@@ -9,6 +9,7 @@ import {
   IAccessControl__factory,
   IERC1594__factory,
   IERC1410Read__factory,
+  IERC1644__factory,
   ERC20__factory,
   IPause__factory,
 } from '@hashgraph/asset-tokenization-contracts';
@@ -39,6 +40,15 @@ const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 export interface IssueResult {
   diamondAddress: string;
   investor: string;
+  amount: string;
+  txHash: string;
+  blockNumber: number;
+}
+
+export interface TransferResult {
+  diamondAddress: string;
+  from: string;
+  to: string;
   amount: string;
   txHash: string;
   blockNumber: number;
@@ -119,6 +129,56 @@ export class SecurityClient {
   async balanceOf(holder: string): Promise<bigint> {
     const read = IERC1410Read__factory.connect(this.diamondAddress, this.reader);
     return read.balanceOf(holder);
+  }
+
+  /**
+   * Preflight an ERC-1594 transfer. Returns the compliance verdict without sending a tx:
+   * `{ allowed, code, reason }`. Useful to surface why a transfer would fail.
+   */
+  async canTransfer(
+    to: string,
+    amount: bigint,
+    data = '0x',
+  ): Promise<{ allowed: boolean; code: string; reason: string }> {
+    const erc1594 = IERC1594__factory.connect(this.diamondAddress, this.reader);
+    const [allowed, code, reason] = await erc1594.canTransfer(to, amount, data);
+    return { allowed, code, reason };
+  }
+
+  /**
+   * Controller (forced) transfer of `amount` units from `from` to `to` via ERC-1644.
+   * Ensures the operator holds CONTROLLER_ROLE first. Works on diamonds deployed with
+   * isControllable:true — confirmed on testnet. This is the compliant move-between-holders
+   * path a treasury agent uses; it routes through the security's compliance modules.
+   */
+  async controllerTransfer(
+    from: string,
+    to: string,
+    amount: bigint,
+    data = '0x',
+    operatorData = '0x',
+  ): Promise<TransferResult> {
+    if (!EVM_ADDRESS_RE.test(from)) throw new Error(`invalid from address: ${from}`);
+    if (!EVM_ADDRESS_RE.test(to)) throw new Error(`invalid to address: ${to}`);
+    if (amount <= 0n) throw new Error('transfer amount must be positive');
+
+    await this.ensureRole(ROLES.CONTROLLER, this.signer.evmAddress);
+
+    const erc1644 = IERC1644__factory.connect(this.diamondAddress, this.runner);
+    const tx = await erc1644.controllerTransfer(from, to, amount, data, operatorData, {
+      gasLimit: GAS.TRANSFER,
+    });
+    const receipt = await tx.wait();
+    if (!receipt) throw new Error(`controllerTransfer tx ${tx.hash} produced no receipt`);
+
+    return {
+      diamondAddress: this.diamondAddress,
+      from,
+      to,
+      amount: amount.toString(),
+      txHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+    };
   }
 
   /** Read name, symbol, ISIN, decimals, total supply, and paused state. */
