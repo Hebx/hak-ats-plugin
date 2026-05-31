@@ -9,7 +9,7 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_KYC_ATTEST_TOOL = 'ats_kyc_register_investor';
 
 const kycAttestParameters = z.object({
-  investor: addressOrId.describe(
+  investor: addressOrId().describe(
     'Investor EVM address (0x…) or Hedera id (0.0.X) being attested.',
   ),
   status: z

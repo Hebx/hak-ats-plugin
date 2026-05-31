@@ -24,7 +24,7 @@ const registryAnchorParameters = z.object({
   name: z.string().optional().describe('For recordType=security: the security display name.'),
   symbol: z.string().optional().describe('For recordType=security: the ticker.'),
   isin: z.string().optional().describe('For recordType=security: the ISIN.'),
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'The security diamond EVM address (0x…) or Hedera id (0.0.X) this record refers to.',
   ),
   // corporate action fields

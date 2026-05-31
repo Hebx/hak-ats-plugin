@@ -12,7 +12,7 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_PAY_DIVIDEND_MANUAL_TOOL = 'ats_pay_dividend_manual';
 
 const payDividendParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security whose holders receive the dividend.',
   ),
   totalAmountHbar: z

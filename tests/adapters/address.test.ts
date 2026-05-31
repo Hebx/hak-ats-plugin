@@ -13,15 +13,20 @@ const EVM = '0x997f2c7a178b80d6496239a4725b20555c0f5b94';
 
 describe('addressOrId schema', () => {
   it('accepts a 0x EVM address', () => {
-    expect(addressOrId.safeParse(EVM).success).toBe(true);
+    expect(addressOrId().safeParse(EVM).success).toBe(true);
   });
   it('accepts a Hedera id 0.0.X', () => {
-    expect(addressOrId.safeParse('0.0.9050506').success).toBe(true);
+    expect(addressOrId().safeParse('0.0.9050506').success).toBe(true);
   });
   it('rejects junk and partial forms', () => {
     for (const bad of ['nope', '0x123', '0.0', '0.0.x', '', '0xZZZ2c7a178b80d6496239a4725b20555c0f5b94']) {
-      expect(addressOrId.safeParse(bad).success).toBe(false);
+      expect(addressOrId().safeParse(bad).success).toBe(false);
     }
+  });
+  it('is a factory: each call returns an independent schema instance', () => {
+    // Reusing one shared instance across fields makes zod-to-json-schema emit `$ref`,
+    // which Gemini rejects. The factory shape is what prevents that regression.
+    expect(addressOrId()).not.toBe(addressOrId());
   });
 });
 

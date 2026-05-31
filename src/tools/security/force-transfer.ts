@@ -9,13 +9,13 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_FORCE_TRANSFER_TOOL = 'ats_force_transfer';
 
 const forceTransferParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond.',
   ),
-  from: addressOrId.describe(
+  from: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) the units are clawed back from (no consent required).',
   ),
-  to: addressOrId.describe(
+  to: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) that receives the clawed-back units (e.g. treasury or a court-ordered recipient).',
   ),
   amount: z.number().int().min(1).describe('Number of security units to force-transfer.'),

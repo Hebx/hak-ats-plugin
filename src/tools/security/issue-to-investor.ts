@@ -9,10 +9,10 @@ import { addressOrId, isHederaId, toEvmAddress } from '../../adapters/address.js
 export const ATS_ISSUE_TO_INVESTOR_TOOL = 'ats_issue_to_investor';
 
 const issueToInvestorParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond (from ats_deploy_security).',
   ),
-  investor: addressOrId.describe(
+  investor: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the investor receiving the newly issued units.',
   ),
   amount: z

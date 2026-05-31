@@ -20,12 +20,20 @@ const HEDERA_ID_RE = /^0\.0\.\d+$/;
 /**
  * Zod schema for an address-or-id input. Validates shape only; resolution happens in
  * `toEvmAddress` at execute time (zod cannot do the async mirror-node lookup).
+ *
+ * This is a FACTORY (returns a fresh schema each call), not a shared instance, and that
+ * is load-bearing. A single shared zod instance reused across multiple fields of one
+ * tool makes zod-to-json-schema deduplicate the repeats into `$ref`
+ * (`{"$ref":"#/properties/diamondAddress"}`). Gemini's function-calling API rejects
+ * `$ref`/`$defs` with a 400 ("Unknown name \"$ref\""), which breaks every tool that
+ * takes more than one address (issue, compliant-transfer, force-transfer). Calling the
+ * factory per field yields independent, fully-inlined schemas that all providers accept.
  */
-export const addressOrId = z
-  .string()
-  .refine((v) => EVM_RE.test(v) || HEDERA_ID_RE.test(v), {
+export function addressOrId() {
+  return z.string().refine((v) => EVM_RE.test(v) || HEDERA_ID_RE.test(v), {
     message: 'must be a 0x-prefixed EVM address or a Hedera id like 0.0.X',
   });
+}
 
 /** True for a Hedera entity id (`0.0.X`). */
 export function isHederaId(value: string): boolean {

@@ -8,7 +8,7 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_GET_SECURITY_INFO_TOOL = 'ats_get_security_info';
 
 const getSecurityInfoParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond to query.',
   ),
 });

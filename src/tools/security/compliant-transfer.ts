@@ -9,13 +9,13 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_COMPLIANT_TRANSFER_TOOL = 'ats_compliant_transfer';
 
 const compliantTransferParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond.',
   ),
-  from: addressOrId.describe(
+  from: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) currently holding the units to move.',
   ),
-  to: addressOrId.describe(
+  to: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the recipient investor.',
   ),
   amount: z

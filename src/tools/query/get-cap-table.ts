@@ -8,7 +8,7 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_GET_CAP_TABLE_TOOL = 'ats_get_cap_table';
 
 const getCapTableParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond to read holders for.',
   ),
 });

@@ -9,7 +9,7 @@ import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 export const ATS_SET_PAUSED_TOOL = 'ats_set_paused';
 
 const setPausedParameters = z.object({
-  diamondAddress: addressOrId.describe(
+  diamondAddress: addressOrId().describe(
     'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond to pause or unpause.',
   ),
   paused: z

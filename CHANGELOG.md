@@ -5,6 +5,22 @@ All notable changes to this project are documented here. The format is based on
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0: minor versions may
 introduce breaking changes.
 
+## [0.4.2] - 2026-05-31
+
+### Fixed
+- **Gemini function-calling regression introduced in `0.4.0`.** The `0.4.0` account-id
+  work made `addressOrId` a single shared zod schema instance, reused across multiple
+  address fields of the same tool (`issue` has 2, `compliant_transfer` and
+  `force_transfer` have 3). `zod-to-json-schema` deduplicates repeated subschemas into
+  `{"$ref":"#/properties/diamondAddress"}`, and Google's Generative Language API rejects
+  `$ref`/`$defs` in `function_declarations` with `400 Bad Request` (`Unknown name
+  "$ref"`). Every tool call through a Gemini-backed agent failed. `addressOrId` is now a
+  **factory** (`addressOrId()`) that returns a fresh schema per field, so each address
+  parameter is fully inlined and provider-agnostic. Verified: all 14 tool schemas emit
+  zero `$ref`/`$defs`. No API or behavior change otherwise.
+- Corrected the hardcoded `version` in the exported `Plugin` object (was stale at
+  `0.3.0`) to track the package version.
+
 ## [0.4.1] - 2026-05-31
 
 ### Changed
