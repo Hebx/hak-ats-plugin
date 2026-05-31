@@ -98,7 +98,7 @@ export type { HederaNetwork } from './env.js';
  */
 export const atsPlugin: Plugin = {
   name: 'hak-ats-plugin',
-  version: '0.4.2',
+  version: '0.4.3',
   description:
     'Tokenized securities (ERC-1400 / ERC-3643 / Asset Tokenization Studio) on Hedera. Deploy equity and bonds, issue, compliant + forced transfers, pause, dividends, plus an HCS registry for name resolution, corporate-action audit trail, KYC attestations, and document anchoring.',
   tools: (context: Context): Tool[] => [

@@ -1,10 +1,16 @@
 # `@hebx/hak-ats-plugin`
 
-A [Hedera Agent Kit](https://github.com/hashgraph/hedera-agent-kit-js) v4 plugin that lets an AI agent deploy and manage tokenized securities (equity and bonds) on Hedera using the [Asset Tokenization Studio](https://github.com/hashgraph/asset-tokenization-studio) (ATS) reference contracts, with an HCS-backed registry and audit trail.
+> AI tools for tokenized securities on Hedera. Deploy ERC-1400 / ERC-3643 equity and bonds, issue shares, run compliant and forced transfers, pay dividends, and keep a tamper-evident KYC + document + audit trail on Hedera Consensus Service — all from natural language.
+
+A [Hedera Agent Kit](https://github.com/hashgraph/hedera-agent-kit-js) v4 plugin that lets an AI agent deploy and manage tokenized securities (equity and bonds) on Hedera using the [Asset Tokenization Studio](https://github.com/hashgraph/asset-tokenization-studio) (ATS) reference contracts, with an HCS-backed registry and audit trail. **14 tools**, two compliance policies enforced in the plugin (not the prompt), and every address input accepts an EVM address *or* a Hedera `0.0.x` id.
+
+```bash
+npm install @hebx/hak-ats-plugin @hashgraph/hedera-agent-kit
+```
 
 ## Status
 
-**Pre-release (`0.4.2`).** The tool surface is exercised against live testnet, but the API may change before `1.0.0`. Network is **opt-in**: set `HEDERA_NETWORK=testnet` (default) or `HEDERA_NETWORK=mainnet` and you operate on that network, at your own risk. There is no mainnet deny. The max-supply-cap and jurisdiction-allowlist policies stay enforced on every network.
+**Pre-release (`0.4.x`), published on [npm](https://www.npmjs.com/package/@hebx/hak-ats-plugin).** The 14-tool surface is exercised against live testnet, but the API may change before `1.0.0`. Network is **opt-in**: set `HEDERA_NETWORK=testnet` (default) or `HEDERA_NETWORK=mainnet` and you operate on that network, at your own risk. There is no mainnet deny. The max-supply-cap and jurisdiction-allowlist policies stay enforced on every network.
 
 ## What this is
 

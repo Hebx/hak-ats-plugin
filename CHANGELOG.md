@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0: minor versions may
 introduce breaking changes.
 
+## [0.4.3] - 2026-05-31
+
+### Changed
+- Docs + npm metadata release (no code or tool-surface changes). Expanded the package
+  `description` and `keywords` (adds `hedera-agent-kit`, `ai-agent`, `langchain`,
+  `ERC-1644`, `cap-table`, `dividends`, `kyc`, `hcs`, `audit-trail`, and more) so the
+  package is discoverable for the full 14-tool surface, not just deploy/issue. README
+  gains a one-line summary, an install line up top, and a published-on-npm status note.
+- Synced the exported `Plugin.version` to `0.4.3`.
+
 ## [0.4.2] - 2026-05-31
 
 ### Fixed
@@ -94,5 +104,9 @@ tool-calling agent example.
 - Initial plugin scaffold and `ats_deploy_security` (deploys an Equity diamond from the
   public testnet ATS factory).
 
+[0.4.3]: https://github.com/Hebx/hak-ats-plugin/compare/v0.4.2...v0.4.3
+[0.4.2]: https://github.com/Hebx/hak-ats-plugin/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/Hebx/hak-ats-plugin/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/Hebx/hak-ats-plugin/compare/v0.2.0...v0.4.0
 [0.2.0]: https://github.com/Hebx/hak-ats-plugin/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Hebx/hak-ats-plugin/releases/tag/v0.1.0
