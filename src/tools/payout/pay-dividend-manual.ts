@@ -7,14 +7,14 @@ import { getHederaClient } from '../../adapters/hedera-client.js';
 import { getLocalSigner } from '../../adapters/local-key-signer.js';
 import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_PAY_DIVIDEND_MANUAL_TOOL = 'ats_pay_dividend_manual';
 
 const payDividendParameters = z.object({
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the deployed security whose holders receive the dividend.'),
+  diamondAddress: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the deployed security whose holders receive the dividend.',
+  ),
   totalAmountHbar: z
     .number()
     .refine((v) => v > 0, { message: 'totalAmountHbar must be greater than 0' })
@@ -75,7 +75,8 @@ export const atsPayDividendManualTool = (_context: Context): Tool => ({
     const env = loadEnv();
 
     const operatorEvm = getLocalSigner().evmAddress.toLowerCase();
-    const capTable = await readCapTable(params.diamondAddress, env.HEDERA_MIRROR_NODE_URL);
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
+    const capTable = await readCapTable(diamondAddress, env.HEDERA_MIRROR_NODE_URL);
 
     // Default to excluding treasury even if the caller bypassed zod defaults.
     const excludeTreasury = params.excludeTreasury ?? true;

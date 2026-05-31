@@ -4,22 +4,20 @@ import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
 import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_FORCE_TRANSFER_TOOL = 'ats_force_transfer';
 
 const forceTransferParameters = z.object({
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the deployed security diamond.'),
-  from: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address the units are clawed back from (no consent required).'),
-  to: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address that receives the clawed-back units (e.g. treasury or a court-ordered recipient).'),
+  diamondAddress: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond.',
+  ),
+  from: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) the units are clawed back from (no consent required).',
+  ),
+  to: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) that receives the clawed-back units (e.g. treasury or a court-ordered recipient).',
+  ),
   amount: z.number().int().min(1).describe('Number of security units to force-transfer.'),
   reason: z
     .string()
@@ -59,8 +57,13 @@ export const atsForceTransferTool = (_context: Context): Tool => ({
   execute: async (client: Client, ctx: Context, params: ForceTransferParams): Promise<ForceTransferResult> => {
     await enforcePreToolPolicies(defaultPolicies(), ATS_FORCE_TRANSFER_TOOL, params, ctx, client);
 
-    const security = new SecurityClient(params.diamondAddress);
-    const result = await security.controllerTransfer(params.from, params.to, BigInt(params.amount));
+    const env = loadEnv();
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
+    const from = await toEvmAddress(params.from, 'account', env.HEDERA_MIRROR_NODE_URL);
+    const to = await toEvmAddress(params.to, 'account', env.HEDERA_MIRROR_NODE_URL);
+
+    const security = new SecurityClient(diamondAddress);
+    const result = await security.controllerTransfer(from, to, BigInt(params.amount));
 
     return {
       diamondAddress: result.diamondAddress,
@@ -70,7 +73,7 @@ export const atsForceTransferTool = (_context: Context): Tool => ({
       reason: params.reason,
       txHash: result.txHash,
       blockNumber: result.blockNumber,
-      network: loadEnv().HEDERA_NETWORK,
+      network: env.HEDERA_NETWORK,
     };
   },
   outputParser: (rawOutput: string) => {

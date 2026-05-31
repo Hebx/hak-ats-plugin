@@ -4,22 +4,20 @@ import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
 import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_COMPLIANT_TRANSFER_TOOL = 'ats_compliant_transfer';
 
 const compliantTransferParameters = z.object({
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the deployed security diamond.'),
-  from: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address currently holding the units to move.'),
-  to: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the recipient investor.'),
+  diamondAddress: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond.',
+  ),
+  from: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) currently holding the units to move.',
+  ),
+  to: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the recipient investor.',
+  ),
   amount: z
     .number()
     .int()
@@ -61,20 +59,25 @@ export const atsCompliantTransferTool = (_context: Context): Tool => ({
   ): Promise<CompliantTransferResult> => {
     await enforcePreToolPolicies(defaultPolicies(), ATS_COMPLIANT_TRANSFER_TOOL, params, ctx, client);
 
-    const security = new SecurityClient(params.diamondAddress);
+    const env = loadEnv();
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
+    const from = await toEvmAddress(params.from, 'account', env.HEDERA_MIRROR_NODE_URL);
+    const to = await toEvmAddress(params.to, 'account', env.HEDERA_MIRROR_NODE_URL);
+
+    const security = new SecurityClient(diamondAddress);
     const amount = BigInt(params.amount);
 
     // Preflight: the ERC-1594 canTransfer view models a msg.sender-initiated transfer,
     // so it cannot validate a controller (from -> to) move. Instead, verify the source
     // holder actually has the units, which surfaces the common failure cheaply before gas.
-    const fromBalance = await security.balanceOf(params.from);
+    const fromBalance = await security.balanceOf(from);
     if (fromBalance < amount) {
       throw new Error(
-        `insufficient balance: ${params.from} holds ${fromBalance.toString()} units, cannot transfer ${params.amount}`,
+        `insufficient balance: ${from} holds ${fromBalance.toString()} units, cannot transfer ${params.amount}`,
       );
     }
 
-    const result = await security.controllerTransfer(params.from, params.to, amount);
+    const result = await security.controllerTransfer(from, to, amount);
 
     return {
       diamondAddress: result.diamondAddress,
@@ -83,7 +86,7 @@ export const atsCompliantTransferTool = (_context: Context): Tool => ({
       amount: result.amount,
       txHash: result.txHash,
       blockNumber: result.blockNumber,
-      network: loadEnv().HEDERA_NETWORK,
+      network: env.HEDERA_NETWORK,
     };
   },
   outputParser: (rawOutput: string) => {

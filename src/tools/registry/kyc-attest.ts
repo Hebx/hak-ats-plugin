@@ -4,14 +4,14 @@ import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { getLocalSigner } from '../../adapters/local-key-signer.js';
 import { loadEnv } from '../../env.js';
 import { anchorRecord, type KycAttestationRecord } from '../../adapters/hcs-registry.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_KYC_ATTEST_TOOL = 'ats_kyc_register_investor';
 
 const kycAttestParameters = z.object({
-  investor: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('Investor EVM address being attested.'),
+  investor: addressOrId.describe(
+    'Investor EVM address (0x…) or Hedera id (0.0.X) being attested.',
+  ),
   status: z
     .enum(['GRANTED', 'REVOKED'])
     .default('GRANTED')
@@ -58,11 +58,13 @@ export const atsKycAttestTool = (_context: Context): Tool => ({
     // Touch the signer so an invalid operator config fails here, consistent with other tools.
     getLocalSigner();
 
+    const investorEvm = await toEvmAddress(params.investor, 'account', env.HEDERA_MIRROR_NODE_URL);
+
     const record: KycAttestationRecord = {
       kind: 'kyc.attestation.v1',
       network: env.HEDERA_NETWORK,
       createdAt: new Date().toISOString(),
-      investor: params.investor.toLowerCase(),
+      investor: investorEvm.toLowerCase(),
       status: params.status,
       jurisdiction: params.jurisdiction,
       reference: params.reference,

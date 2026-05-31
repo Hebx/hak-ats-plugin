@@ -4,14 +4,14 @@ import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
 import { loadEnv, type HederaNetwork } from '../../env.js';
 import { defaultPolicies, enforcePreToolPolicies } from '../../policies/index.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_SET_PAUSED_TOOL = 'ats_set_paused';
 
 const setPausedParameters = z.object({
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the deployed security diamond to pause or unpause.'),
+  diamondAddress: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond to pause or unpause.',
+  ),
   paused: z
     .boolean()
     .describe('true to pause all transfers (emergency stop), false to resume.'),
@@ -41,7 +41,9 @@ export const atsSetPausedTool = (_context: Context): Tool => ({
   execute: async (client: Client, ctx: Context, params: SetPausedParams): Promise<SetPausedResult> => {
     await enforcePreToolPolicies(defaultPolicies(), ATS_SET_PAUSED_TOOL, params, ctx, client);
 
-    const security = new SecurityClient(params.diamondAddress);
+    const env = loadEnv();
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
+    const security = new SecurityClient(diamondAddress);
     const result = await security.setPaused(params.paused);
 
     return {
@@ -49,7 +51,7 @@ export const atsSetPausedTool = (_context: Context): Tool => ({
       paused: result.paused,
       txHash: result.txHash,
       blockNumber: result.blockNumber,
-      network: loadEnv().HEDERA_NETWORK,
+      network: env.HEDERA_NETWORK,
     };
   },
   outputParser: (rawOutput: string) => {

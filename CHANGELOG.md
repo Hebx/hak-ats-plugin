@@ -5,6 +5,28 @@ All notable changes to this project are documented here. The format is based on
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0: minor versions may
 introduce breaking changes.
 
+## [0.4.0] - 2026-05-31
+
+### Added
+- **Hedera account / contract ids accepted everywhere an EVM address is.** Every address
+  input across the tools — `diamondAddress`, `investor`, `from`, `to` — now takes either a
+  `0x` EVM address or a Hedera id (`0.0.X`). Ids are resolved to their canonical EVM
+  address through the mirror node before any contract call (diamonds via the contract
+  endpoint, accounts via the account endpoint), with per-process caching.
+- `ats_get_cap_table` now reports each holder's `accountId` (0.0.X) alongside the EVM
+  `address`; `ats_issue_to_investor` returns `investorAccountId` when the investor was
+  given by id.
+- `resolveAccountIdToEvm` mirror-node helper and a shared `addressOrId` schema /
+  `toEvmAddress` normalizer (`src/adapters/address.ts`).
+- Unit tests for the normalizer (mocked fetch, no HBAR) and a live testnet suite that
+  issues to and reads back a holder addressed by its `0.0.X` account id.
+
+### Notes
+- Backfill: 0.3.0 added the mainnet opt-in (removed mainnet-deny; kept max-supply +
+  jurisdiction policies), the HCS registry/KYC/document tools, `ats_deploy_bond`,
+  `ats_force_transfer`, and `ats_set_paused`. 0.3.1 added registry tooling polish and
+  weaker-model schema robustness.
+
 ## [0.2.0] - 2026-05-30
 
 First feature-complete testnet release. Expands the plugin from a single deploy tool to the

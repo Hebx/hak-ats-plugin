@@ -3,14 +3,14 @@ import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
 import { SecurityClient } from '../../contracts/security-client.js';
 import { loadEnv, type HederaNetwork } from '../../env.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_GET_SECURITY_INFO_TOOL = 'ats_get_security_info';
 
 const getSecurityInfoParameters = z.object({
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the deployed security diamond to query.'),
+  diamondAddress: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond to query.',
+  ),
 });
 
 export type GetSecurityInfoParams = z.infer<typeof getSecurityInfoParameters>;
@@ -43,11 +43,12 @@ export const atsGetSecurityInfoTool = (_context: Context): Tool => ({
   ): Promise<GetSecurityInfoResult> => {
     const env = loadEnv();
 
-    const security = new SecurityClient(params.diamondAddress);
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
+    const security = new SecurityClient(diamondAddress);
     const info = await security.getInfo();
 
     return {
-      diamondAddress: params.diamondAddress,
+      diamondAddress,
       name: info.name,
       symbol: info.symbol,
       isin: info.isin,

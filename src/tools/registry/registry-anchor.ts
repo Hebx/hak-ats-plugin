@@ -8,6 +8,7 @@ import {
   type SecurityRegisteredRecord,
   type CorporateActionRecord,
 } from '../../adapters/hcs-registry.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_REGISTRY_ANCHOR_TOOL = 'ats_registry_anchor';
 
@@ -23,10 +24,9 @@ const registryAnchorParameters = z.object({
   name: z.string().optional().describe('For recordType=security: the security display name.'),
   symbol: z.string().optional().describe('For recordType=security: the ticker.'),
   isin: z.string().optional().describe('For recordType=security: the ISIN.'),
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('The security diamond EVM address this record refers to.'),
+  diamondAddress: addressOrId.describe(
+    'The security diamond EVM address (0x…) or Hedera id (0.0.X) this record refers to.',
+  ),
   // corporate action fields
   action: z
     .enum(['issue', 'transfer', 'dividend', 'pause', 'unpause', 'force_transfer'])
@@ -62,6 +62,7 @@ export const atsRegistryAnchorTool = (_context: Context): Tool => ({
   execute: async (_client: Client, _ctx: Context, params: RegistryAnchorParams): Promise<RegistryAnchorResult> => {
     const env = loadEnv();
     const now = new Date().toISOString();
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
 
     if (params.recordType === 'security') {
       if (!params.securityType || !params.name || !params.symbol || !params.isin) {
@@ -75,7 +76,7 @@ export const atsRegistryAnchorTool = (_context: Context): Tool => ({
         name: params.name,
         symbol: params.symbol,
         isin: params.isin,
-        diamondAddress: params.diamondAddress.toLowerCase(),
+        diamondAddress: diamondAddress.toLowerCase(),
         issuer: getLocalSigner().evmAddress.toLowerCase(),
       };
       const receipt = await anchorRecord(record);
@@ -90,7 +91,7 @@ export const atsRegistryAnchorTool = (_context: Context): Tool => ({
       network: env.HEDERA_NETWORK,
       createdAt: now,
       action: params.action,
-      diamondAddress: params.diamondAddress.toLowerCase(),
+      diamondAddress: diamondAddress.toLowerCase(),
       txHash: params.txHash,
       detail: params.detail ?? '',
     };
