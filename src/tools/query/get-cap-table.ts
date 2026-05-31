@@ -1,22 +1,24 @@
 import { z } from 'zod';
 import type { Client } from '@hiero-ledger/sdk';
 import type { Context, Tool } from '@hashgraph/hedera-agent-kit';
-import { readCapTable } from '../../adapters/mirror-node.js';
+import { readCapTable, resolveEvmToAccountId } from '../../adapters/mirror-node.js';
 import { loadEnv, type HederaNetwork } from '../../env.js';
+import { addressOrId, toEvmAddress } from '../../adapters/address.js';
 
 export const ATS_GET_CAP_TABLE_TOOL = 'ats_get_cap_table';
 
 const getCapTableParameters = z.object({
-  diamondAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed EVM address')
-    .describe('EVM address of the deployed security diamond to read holders for.'),
+  diamondAddress: addressOrId.describe(
+    'EVM address (0x…) or Hedera id (0.0.X) of the deployed security diamond to read holders for.',
+  ),
 });
 
 export type GetCapTableParams = z.infer<typeof getCapTableParameters>;
 
 interface CapTableHolder {
   address: string;
+  /** Hedera account id (0.0.X) for the holder, when one exists. null for contract-only addresses. */
+  accountId: string | null;
   balance: string;
 }
 
@@ -46,13 +48,28 @@ export const atsGetCapTableTool = (_context: Context): Tool => ({
   ): Promise<GetCapTableResult> => {
     const env = loadEnv();
 
-    const capTable = await readCapTable(params.diamondAddress, env.HEDERA_MIRROR_NODE_URL);
+    const diamondAddress = await toEvmAddress(params.diamondAddress, 'contract', env.HEDERA_MIRROR_NODE_URL);
+    const capTable = await readCapTable(diamondAddress, env.HEDERA_MIRROR_NODE_URL);
+
+    // Enrich each holder with its Hedera account id alongside the EVM address. A
+    // contract-only address (no associated account) resolves to null rather than failing.
+    const holders: CapTableHolder[] = await Promise.all(
+      capTable.holders.map(async (h) => {
+        let accountId: string | null = null;
+        try {
+          accountId = await resolveEvmToAccountId(h.address, env.HEDERA_MIRROR_NODE_URL);
+        } catch {
+          accountId = null;
+        }
+        return { address: h.address, accountId, balance: h.balance };
+      }),
+    );
 
     return {
       diamondAddress: capTable.diamondAddress,
       totalSupply: capTable.totalSupply,
-      holderCount: capTable.holders.length,
-      holders: capTable.holders,
+      holderCount: holders.length,
+      holders,
       network: env.HEDERA_NETWORK,
     };
   },
@@ -60,7 +77,7 @@ export const atsGetCapTableTool = (_context: Context): Tool => ({
     try {
       const parsed = JSON.parse(rawOutput) as GetCapTableResult;
       const lines = parsed.holders
-        .map((h) => `  ${h.address}: ${h.balance}`)
+        .map((h) => `  ${h.address}${h.accountId ? ` (${h.accountId})` : ''}: ${h.balance}`)
         .join('\n');
       return {
         raw: parsed,

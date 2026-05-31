@@ -51,6 +51,44 @@ export async function resolveContractEvmAddress(
 export function resetMirrorCache(): void {
   evmAddressCache.clear();
   accountIdCache.clear();
+  accountEvmCache.clear();
+}
+
+const accountEvmCache = new Map<string, string>();
+
+interface MirrorAccountEvmResponse {
+  account: string;
+  evm_address: string;
+}
+
+/**
+ * Resolve a Hedera account id like "0.0.X" to its 0x-prefixed EVM address via the mirror
+ * node. An account with an ECDSA key exposes its key-derived alias; an account without
+ * one resolves to the canonical long-zero form (`0x0000…{entityNum}`). Either is the
+ * correct EVM address to address that account on-chain.
+ */
+export async function resolveAccountIdToEvm(
+  accountId: string,
+  mirrorBaseUrl: string,
+): Promise<string> {
+  if (!/^0\.0\.\d+$/.test(accountId)) {
+    throw new Error(`invalid Hedera account id: ${accountId}`);
+  }
+  const cached = accountEvmCache.get(accountId);
+  if (cached) return cached;
+
+  const base = mirrorBaseUrl.replace(/\/+$/, '');
+  const root = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+  const res = await fetch(`${root}/accounts/${accountId}`);
+  if (!res.ok) {
+    throw new Error(`no Hedera account for ${accountId} (mirror node ${res.status})`);
+  }
+  const body = (await res.json()) as MirrorAccountEvmResponse;
+  if (!body.evm_address || !body.evm_address.startsWith('0x')) {
+    throw new Error(`mirror node response missing evm_address for ${accountId}`);
+  }
+  accountEvmCache.set(accountId, body.evm_address);
+  return body.evm_address;
 }
 
 const accountIdCache = new Map<string, string>();

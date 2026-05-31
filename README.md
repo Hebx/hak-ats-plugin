@@ -34,6 +34,7 @@ Notes on behavior, confirmed on testnet:
 - **Bonds deploy the core instrument.** `ats_deploy_bond` sets currency, par value, and start/maturity dates; coupon-rate facets are a roadmap item.
 - **The registry topic is discovered within a session.** The first registry write (`ats_registry_anchor` / `ats_kyc_register_investor` / `ats_anchor_document`) creates an HCS topic and returns its id. Read tools (`ats_registry_resolve`, `ats_registry_list`) reuse that topic automatically for the rest of the process, so a deploy-register-then-resolve flow works without configuration. Set `HCS_REGISTRY_TOPIC_ID` to pin the **same** registry across separate processes.
 - **Symbols are capped at 8 characters** (an ATS contract constraint); longer symbols are rejected at deploy time.
+- **Addresses accept either form.** Every address input — the security `diamondAddress`, and any `investor` / `from` / `to` — takes a `0x` EVM address **or** a Hedera id (`0.0.X`). Ids are resolved to their canonical EVM address via the mirror node before any contract call (cached per process), so the two forms are interchangeable. Diamonds resolve through the contract endpoint, accounts through the account endpoint; an account with an ECDSA key resolves to its key alias, one without to the long-zero form. Reads echo both: `ats_get_cap_table` reports each holder's `accountId` alongside its EVM `address`, and `ats_issue_to_investor` returns the `investorAccountId` when you addressed the investor by id.
 
 ## Install
 
