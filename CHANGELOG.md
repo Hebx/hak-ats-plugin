@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format is based on
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0: minor versions may
 introduce breaking changes.
 
+## [0.4.1] - 2026-05-31
+
+### Changed
+- Docs-only republish. The `0.4.0` tarball shipped with a stale README Status line
+  (`Pre-release (0.3.1)`) because the version reference was corrected after that publish;
+  npm tarballs are immutable, so this patch carries the corrected README. No code or
+  tool-surface changes from `0.4.0`.
+
 ## [0.4.0] - 2026-05-31
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "@hebx/hak-ats-plugin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Hedera Agent Kit v4 plugin for Asset Tokenization Studio — deploy ERC-1400 equity securities, issue to investors, compliant transfers, and HBAR dividend payouts on Hedera",
   "type": "module",
   "main": "./dist/index.js",

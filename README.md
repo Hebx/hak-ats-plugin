@@ -4,7 +4,7 @@ A [Hedera Agent Kit](https://github.com/hashgraph/hedera-agent-kit-js) v4 plugin
 
 ## Status
 
-**Pre-release (`0.3.1`).** The tool surface is exercised against live testnet, but the API may change before `1.0.0`. Network is **opt-in**: set `HEDERA_NETWORK=testnet` (default) or `HEDERA_NETWORK=mainnet` and you operate on that network, at your own risk. There is no mainnet deny. The max-supply-cap and jurisdiction-allowlist policies stay enforced on every network.
+**Pre-release (`0.4.1`).** The tool surface is exercised against live testnet, but the API may change before `1.0.0`. Network is **opt-in**: set `HEDERA_NETWORK=testnet` (default) or `HEDERA_NETWORK=mainnet` and you operate on that network, at your own risk. There is no mainnet deny. The max-supply-cap and jurisdiction-allowlist policies stay enforced on every network.
 
 ## What this is
 
